@@ -1,0 +1,243 @@
+**********************************************response message*********************************************
+package com.example.tw2d3.Controller;
+
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data @AllArgsConstructor
+public class ResponseMessage {
+    private String message;
+    private Integer status;
+
+}
+**************************************bark class***************************************************************
+package com.example.tw2d3.Controller;
+
+import lombok.*;
+import javax.validation.constraints.*;
+@AllArgsConstructor
+@Data
+public class Bark extends Object{
+    @NotNull(message = "id is required")
+    @Size(min = 3,message = "id must be more than 2 number")
+   private String rideID;
+    @NotNull (message = "name is required")
+    @Size(min = 4,message = "name must be more than 3 number")
+   private String rideName;
+    @NotNull (message = "type is required")
+    @Pattern(regexp = "(Rollercoaster|thriller|water)",message = "ride type must be Rollercoaster or thriller or water")
+   private String rideType;
+    @NotNull (message = "ticket is required")
+    @Digits( integer =3, fraction = 0,message = "tickets must be number")
+   private Integer tickets;
+    @NotNull (message = "priceis required")
+    @Digits( integer =3, fraction = 0,message = "price must be number")
+   private Integer price;
+}
+***************************************************barcController class*************************************
+package com.example.tw2d3.Controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/bark")
+public class BarcController {
+    ArrayList<Bark> rideses = new ArrayList<>();
+    ArrayList<AddTicket> ticket = new ArrayList<>();
+
+
+    @GetMapping
+    public ArrayList getRides() {
+        return rideses;
+    }
+
+    @PostMapping
+    public ResponseEntity addRides(@Valid @RequestBody Bark rides, Errors errors) {
+        if (errors.hasErrors()) {
+            String defult = errors.getFieldError().getDefaultMessage();
+            return ResponseEntity.status(400).body(defult);
+        }
+        rideses.add(rides);
+        String id1=rides.getRideID();
+        int tnum=rides.getTickets();
+        AddTicket t1=new AddTicket(id1,tnum);
+        ticket.add(t1);
+        return ResponseEntity.status(200).body(rides);
+    }
+
+    @PutMapping({"/{index}"})
+    public ResponseEntity updateRides(@PathVariable Integer index, @Valid @RequestBody Bark rides,Errors errors ) {
+        if (errors.hasErrors()) {
+            String defult = errors.getFieldError().getDefaultMessage();
+            return ResponseEntity.status(400).body(defult);
+        }
+
+        if (index < this.rideses.size() && index >= 0) {
+            this.rideses.set(index, rides);
+            return ResponseEntity.status(200).body(new ResponseMessage("rides updated", 200));
+        } else {
+            return ResponseEntity.status(400).body(new ResponseMessage("Invalid index", 400));
+        }
+    }
+
+    @DeleteMapping({"/{index}"})
+    public ResponseEntity deleteRides(@PathVariable int index) {
+
+            rideses.remove(index);
+            return ResponseEntity.status(200).body(new ResponseMessage("rides is delete", 200));
+
+
+    }
+
+    @PutMapping("sale/{id}")
+    public Object sale(@PathVariable String id, @RequestBody Integer amount) {
+        for (int i = 0; i < this.rideses.size(); i++) {
+            Bark R1 = (Bark) this.rideses.get(i);
+            if (R1.getRideID().equals(id)) {
+                if (R1.getTickets() > 0) {
+                    if (R1.getPrice() > amount||R1.getPrice() < amount) {
+                        return ResponseEntity.status(400).body(new ResponseMessage("price is error ", 400));
+                    } else {
+                        int number = R1.getTickets() - 1;
+                        R1.setTickets(number);
+                        rideses.add(i,R1);
+                        return "your ticket details:\n"+R1.getRideID()+"\n"+R1.getRideType()+"\n"+R1.getRideName()+"\n"+R1.getPrice();
+                    }
+                }
+            }
+        }
+        return ResponseEntity.status(400).body(new ResponseMessage("bad request ", 400));
+    }
+//,@RequestBody Integer ticket
+    @PutMapping("refil/{id}")
+    public ResponseEntity refil(@PathVariable String id) {
+        for (int i = 0; i < this.rideses.size(); i++) {
+            Bark R2 = (Bark) this.rideses.get(i);
+            if (R2.getRideID().equals(id)) {
+                if (R2.getTickets() == 0) {
+                    for (int x = 0; x < this.ticket.size(); x++) {
+                        AddTicket T1 = (AddTicket) this.ticket.get(x);
+                        if (T1.getId().equals(id))
+                            R2.setTickets(T1.getNum());
+                        return ResponseEntity.status(200).body(new ResponseMessage("ticket is refiled", 200));
+                    }
+                }
+            }
+        }
+            return ResponseEntity.status(200).body(new ResponseMessage("ticket is not zero", 200));
+        }
+    }
+
+******************************************employee class************************************************
+package com.example.tw2d3.Controller2;
+import lombok.*;
+import javax.validation.constraints.*;
+@AllArgsConstructor
+@Data
+public class Employees extends Object{
+
+    @NotNull(message = "id is required")
+    @Size(min = 3,message = "id must be more than 2 number")
+    private String ID;
+    @NotNull(message = "name is required")
+    @Size(min = 5,message = "name must be more than 4 number")
+    private String name;
+    @NotNull(message = "age is required")
+    @Digits( integer =3, fraction = 0,message = "age must be number")
+    @Min(value = 26,message = "age must be more than 25")
+    private Integer age;
+    //@Pattern(regexp = "(false)",message = "on leave must be false")
+    private boolean onLeave;
+    @NotNull(message = "year is required")
+    @Digits( integer =4, fraction = 0,message = "year must be number")
+    //@Size(min = 4,max = 4,message = "year must be 4 number")
+    private Integer employmentYear;
+    @Digits( integer =3, fraction = 0,message = "annual leave days  must be number")
+    @NotNull (message = "annual Leave days is required")
+    private Integer annualLeave;
+
+}
+*******************************************employeeController class*************************************
+package com.example.tw2d3.Controller2;
+
+
+import com.example.tw2d3.Controller.ResponseMessage;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.ArrayList;
+
+@RestController
+@RequestMapping("api/v1/employee")
+public class EmployeesController {
+
+    ArrayList<Employees> employees = new ArrayList<>();
+
+    @GetMapping
+    public ArrayList getEmployee() {
+        return employees;
+    }
+
+    @PostMapping
+    public ResponseEntity addEmployee(@Valid @RequestBody Employees E1, Errors errors) {
+        if (errors.hasErrors()) {
+            String defult = errors.getFieldError().getDefaultMessage();
+            return ResponseEntity.status(400).body(defult);
+        }
+        employees.add(E1);
+
+        return ResponseEntity.status(200).body(E1);
+    }
+
+    @PutMapping({"/{index}"})
+    public ResponseEntity updateRides(@PathVariable Integer index, @Valid @RequestBody Employees E2, Errors errors) {
+        if (errors.hasErrors()) {
+            String defult = errors.getFieldError().getDefaultMessage();
+            return ResponseEntity.status(400).body(defult);
+        }
+
+        if (index < this.employees.size() && index >= 0) {
+            this.employees.set(index, E2);
+            return ResponseEntity.status(200).body(new ResponseMessage("Employee is updated", 200));
+        } else {
+            return ResponseEntity.status(400).body(new ResponseMessage("Invalid index", 400));
+        }
+    }
+
+    @DeleteMapping({"/{index}"})
+    public ResponseEntity deleteRides(@PathVariable int index) {
+
+        employees.remove(index);
+        return ResponseEntity.status(200).body(new ResponseMessage("employee is delete", 200));
+    }
+
+
+    @PutMapping("/OnLeave/{id}")
+    public ResponseEntity OnLeave(@PathVariable String id) {
+        for (int i = 0; i < this.employees.size(); i++) {
+            Employees E = (Employees) this.employees.get(i);
+            if (E.getID().equals(id)) {
+                if (E.getAnnualLeave() == 0) {
+                    return ResponseEntity.status(400).body(new ResponseMessage("annual leave is zero", 400));
+                }
+                if (E.isOnLeave()) {
+                    return ResponseEntity.status(400).body(new ResponseMessage("employee is on leave", 400));
+                } else {
+                  //  boolean check = E.isOnLeave();
+                    E.setOnLeave(true);
+                    E.setAnnualLeave(E.getAnnualLeave()-1);
+                    employees.add(i, E);
+                }
+            }
+            }
+        return ResponseEntity.status(200).body(new ResponseMessage("GOOD", 200));
+    }
+}
